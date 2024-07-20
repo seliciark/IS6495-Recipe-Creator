@@ -7,10 +7,8 @@ from datetime import datetime
 class InitializeDB(db.DBbase):
     def createDBTables(self):
 
-        # Create DB Tables ***-->>currently set to drop and reset database for Testing<<----g****
         try:
             sql = """
-            DROP TABLE IF EXISTS Recipes;
 
             CREATE TABLE IF NOT EXISTS Recipes (
                 recipeID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,18 +20,13 @@ class InitializeDB(db.DBbase):
                 servings INTEGER,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-
-            DROP TABLE IF EXISTS Users;
-
+            
             CREATE TABLE IF NOT EXISTS Users (
                 userID INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-
-            DROP TABLE IF EXISTS Ingredients;
 
             CREATE TABLE IF NOT EXISTS Ingredients (
                 ingredientID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,18 +46,6 @@ class InitializeDB(db.DBbase):
     def populateDB(self):
         # populates default data to database
         try:
-            users = [
-                ('john_doe', 'password123', 'john.doe@example.com'),
-                ('jane_smith', 'mypassword', 'jane.smith@example.com'),
-                ('alex_jones', 'securepass', 'alex.jones@example.com'),
-                ('emily_davis', 'emilypass', 'emily.davis@example.com'),
-                ('michael_brown', 'brownie123', 'michael.brown@example.com'),
-                ('sarah_lee', 'sarahpassword', 'sarah.lee@example.com'),
-                ('david_clark', 'davidpass', 'david.clark@example.com'),
-                ('linda_martin', 'lindapass', 'linda.martin@example.com'),
-                ('robert_white', 'robertpassword', 'robert.white@example.com'),
-                ('lisa_harris', 'lisapass', 'lisa.harris@example.com')
-            ]
 
             recipes = [
                 ('Spaghetti Bolognese', 'Dinner', 'A classic Italian pasta dish.', 15, 60, 4),
@@ -100,10 +81,6 @@ class InitializeDB(db.DBbase):
                 ('Caesar Dressing', '100', 'ml', 7)
             ]
 
-            super().get_cursor.executemany('''
-                INSERT INTO Users (username, password, email) 
-                VALUES (?, ?, ?)
-                ''', users)
 
             super().get_cursor.executemany('''
                 INSERT INTO Recipes (recipeName, category, description, preparationTime, cookingTime, servings) 
@@ -122,8 +99,55 @@ class InitializeDB(db.DBbase):
         except Exception as e:
             print("error populating default database: ", e)
 
+
+#CRUD operations on User:
+class Users(db.DBbase):
+    def __init__(self):
+        super(Users, self).__init__("RecipeCreator.db")
+
+    def update_user(self, username, userID):
+        try:
+            super().get_cursor.execute("UPDATE Users set username = ? where userID = ?;", (username, userID))
+            super().get_connection.commit()
+            print(f"Updated User: {username}, {userID} successfully")
+        except Exception as e:
+            print("An error occurred updating user: ", e)
+
+    def add_user(self, username, email):
+        try:
+            super().get_cursor.execute("INSERT OR IGNORE INTO Users (username, email) values(?,?);", (username, email))
+            super().get_connection.commit()
+            print(f"New user added successfully: {username}, {email}")
+        except Exception as e:
+            print("An error occurred adding user: ", e)
+
+    def delete_user(self, userID):
+        try:
+            super().get_cursor.execute("DELETE FROM Users where userID = ?;", (userID,))
+            super().get_connection.commit()
+            print(f"deleted {userID} successfully")
+            return True
+        except Exception as e:
+            print("An error occurred deleting User.", e)
+
+    # I think we can use this function to determine if a user exists or not
+    def fetch_user(self, userID=None, username=None):
+        # if Id is null (or None), then get everything, else get by id
+        try:
+            if userID is not None:
+                return super().get_cursor.execute("SELECT * FROM Users WHERE userID = ?",(userID,)).fetchone()
+            elif username is not None:
+                return super().get_cursor.execute("SELECT * FROM Users WHERE username = ?", (username,)).fetchone()
+            else:
+                return super().get_cursor.execute("SELECT * FROM Users").fetchall()
+
+        except Exception as e:
+            print("An error occurred finding Users.", e)
+
+
+
 class Ingredients(db.DBbase):
-    def __init__(self, row):
+    def __init__(self):
         super(Ingredients, self).__init__("RecipeCreator.db")
 
     def update_ingrd(self, ingredientID, ingredientName):
@@ -222,22 +246,14 @@ class RecipeImport(db.DBbase):
                             (item.recipeName, item.category, item.description, item.preparationTime, item.cookingTime, item.servings))
                     super().get_connection.commit()
 
-                    print(f"Recipe Saved:{item.recipeName}\n")
+                    print(f"Recipe Saved:{item.recipeName}")
 
                 except Exception as e:
                     print(e)
         else:
             print("save to DB aborted")
 
-class User:
-    def __init__(self, row):
-        self.userID = row[0]
-        self.username = row[1]
-        self.password = row[2]
-        self.email = row[3]
-        self.createdAt = row[4]
 
-    #TODO
 
 
 
@@ -252,9 +268,32 @@ class User:
 
 #import recipes .csv
 
-recipe_manager = RecipeImport("RecipeCreator.db")
-recipe_manager.read_recipes("recipes_csv.csv")
-recipe_manager.save_to_database()
+# recipe_manager = RecipeImport("RecipeCreator.db")
+# recipe_manager.read_recipes("recipes_csv.csv")
+# recipe_manager.save_to_database()
+
+
+#to use as starting point in interactive menu for user:
+class App:
+    def run(self):
+        user1 = Users()
+        results = user1.fetch_user()
+        if len(results) > 0:
+            for item in results:
+                print(item)
+        elif len(results) == 0:
+            print("Please create a new user to get started: ")
+            username = input("Enter a username: ")
+            email = input("Enter an email: ")
+            user1.add_user(username, email)
+            print("Done\n")
+            input("Press return to continue")
+
+apptest = App()
+apptest.run()
+
+
+
 
 
 
