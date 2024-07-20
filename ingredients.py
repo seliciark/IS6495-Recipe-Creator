@@ -6,9 +6,9 @@ import csv
 class ingredients:
     def __init__(self, row):
         """sets the columns for the "ingredients" table"""
-      self.IngredientsID = row[0]
-      self.IngredientName = row[1]
-      self.Quantity = row[2]
-      self.Unit = row[3]
-      self.RecipeID = row[4]
+      self.ingredientsID = row[0]
+      self.ingredientName = row[1]
+      self.quantity = row[2]
+      self.unit = row[3]
+      self.recipeID = row[4]
       
