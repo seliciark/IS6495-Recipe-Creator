@@ -7,7 +7,6 @@ from datetime import datetime
 class InitializeDB(db.DBbase):
     def createDBTables(self):
 
-        # Create DB Tables ***-->>currently set to drop and reset database for Testing<<----g****
         try:
             sql = """
 
@@ -21,8 +20,6 @@ class InitializeDB(db.DBbase):
                 servings INTEGER,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            
-            DROP TABLE IF EXISTS Users;
             
             CREATE TABLE IF NOT EXISTS Users (
                 userID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -276,7 +273,7 @@ class RecipeImport(db.DBbase):
 # recipe_manager.save_to_database()
 
 
-#to use in interactive menu for user:
+#to use as starting point in interactive menu for user:
 class App:
     def run(self):
         user1 = Users()
