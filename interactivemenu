@@ -1,0 +1,24 @@
+def interactive_menu():
+    recipe_db = CsvLab("recipe.sqlite")
+    recipe_db.reset_database()
+    recipe_db.import_csv_file("recipe.csv")
+    recipe_db.save_to_database()
+
+    while True:
+        username = input("Enter your username: ")
+        user = recipe_db.check_user(username)
+        if user:
+            print(f"Welcome back, {username}!")
+            recipe_db.show_recipes()
+        else:
+            create_new = input(f"Username '{username}' not found. Would you like to create a new user? (y/n): ").lower()
+            if create_new == 'y':
+                recipe_db.create_user(username)
+            else:
+                print("Please enter a valid username.")
+        cont = input("Do you want to continue? (y/n): ").lower()
+        if cont != 'y':
+            break
+
+if __name__ == "__main__":
+    interactive_menu()
