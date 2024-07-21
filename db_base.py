@@ -24,7 +24,10 @@ class DBbase:
 
     # Function/method: passes in and executes raw SQL
     def execute_script(self, sql_string):
-        self._cursor.executescript(sql_string)
+        try:
+            self._cursor.executescript(sql_string)
+        except Exception as e:
+            print(f"An error occured: {e}")
 
     # Function/method: resets the database
     def reset_database(self):
