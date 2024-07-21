@@ -81,7 +81,6 @@ class InitializeDB(db.DBbase):
                 ('Caesar Dressing', '100', 'ml', 7)
             ]
 
-
             super().get_cursor.executemany('''
                 INSERT INTO Recipes (recipeName, category, description, preparationTime, cookingTime, servings) 
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -93,12 +92,9 @@ class InitializeDB(db.DBbase):
                 ''', ingredients)
 
             super().get_connection.commit()
-
             print("Default Data Population Successful")
-
         except Exception as e:
             print("error populating default database: ", e)
-
 
 #CRUD operations on User:
 class Users(db.DBbase):
@@ -145,24 +141,23 @@ class Users(db.DBbase):
             print("An error occurred finding Users.", e)
 
 
-
 class Ingredients(db.DBbase):
     def __init__(self):
         super(Ingredients, self).__init__("RecipeCreator.db")
 
     def update_ingrd(self, ingredientID, ingredientName):
         try:
-            super().get_cursor.execute("UPDATE Ingredients set name = ? where id = ?;", (ingredientName, ingredientID))
+            super().get_cursor.execute("UPDATE Ingredients set ingredientName = ? where ingredientID = ?;", (ingredientName, ingredientID))
             super().get_connection.commit()
             print(f"Updated {ingredientName} successfully")
         except Exception as e:
             print("An error occurred.", e)
 
-    def add_ingrd(self, ingredientName):
+    def add_ingrd(self, ingredientName, quantity, unit):  #recipeID is being ignored for now
         try:
-            super().get_cursor.execute("INSERT OR IGNORE INTO Ingredients  (ingredientName) values(?);", (ingredientName,))
+            super().get_cursor.execute("INSERT OR IGNORE INTO Ingredients  (ingredientName, quantity, unit) values(?, ?, ?);", (ingredientName, quantity, unit))
             super().get_connection.commit()
-            print(f"Add {ingredientName} successfully")
+            print(f"Added {ingredientName} successfully")
         except Exception as e:
             print("An error occurred.", e)
 
@@ -199,7 +194,10 @@ class RecipeRows:
         self.servings = row[5]
 
 class RecipeImport(db.DBbase):
-
+    # added by Selicia
+    def __init__(self, db_name):
+        super().__init__(db_name)
+        self.recipe_list = []
     #Recipes will be the CSV file import we use in the demo "Would you like to import additional recipes?"
 
     def read_recipes(self, file_name):
@@ -219,7 +217,7 @@ class RecipeImport(db.DBbase):
 
     def save_to_database(self):
         print("Number of records to save: ", len(self.recipe_list))
-        save = input("Continue? ").lower()
+        save = input("Continue? (y/n)").lower()
 
         if save == "y":
             for item in self.recipe_list:
@@ -253,9 +251,52 @@ class RecipeImport(db.DBbase):
         else:
             print("save to DB aborted")
 
+class Recipes(db.DBbase):
+    def __init__(self):
+        super(Recipes, self).__init__("RecipeCreator.db")
 
+    def update_recipe(self, recipeID, recipeName, category, description, preparationTime, cookingTime, servings):
+        try:
+            super().get_cursor.execute("""
+                UPDATE Recipes 
+                SET recipeName = ?, category = ?, description = ?, preparationTime = ?, cookingTime = ?, servings = ?
+                WHERE recipeID = ?;
+            """, (recipeName, category, description, preparationTime, cookingTime, servings, recipeID))
+            super().get_connection.commit()
+            print(f"Updated {recipeName} successfully")
+        except Exception as e:
+            print("An error occurred.", e)
 
+    def add_recipe(self, recipeName, category, description, preparationTime, cookingTime, servings):
+        try:
+            super().get_cursor.execute("""
+                INSERT OR IGNORE INTO Recipes (recipeName, category, description, preparationTime, cookingTime, servings) 
+                VALUES (?, ?, ?, ?, ?, ?);
+            """, (recipeName, category, description, preparationTime, cookingTime, servings))
+            super().get_connection.commit()
+            print(f"Added {recipeName} successfully")
+        except Exception as e:
+            print("An error occurred.", e)
 
+    def delete_recipe(self, recipeID):
+        try:
+            super().get_cursor.execute("DELETE FROM Recipes WHERE recipeID = ?;", (recipeID,))
+            super().get_connection.commit()
+            print(f"Deleted recipe with ID {recipeID} successfully")
+            return True
+        except Exception as e:
+            print("An error occurred.", e)
+
+    def fetch_recipe(self, recipeID=None, recipeName=None):
+        try:
+            if recipeID is not None:
+                return super().get_cursor.execute("SELECT * FROM Recipes WHERE recipeID = ?", (recipeID,)).fetchone()
+            elif recipeName is not None:
+                return super().get_cursor.execute("SELECT * FROM Recipes WHERE recipeName = ?", (recipeName,)).fetchone()
+            else:
+                return super().get_cursor.execute("SELECT * FROM Recipes").fetchall()
+        except Exception as e:
+            print("An error occurred finding Recipes.", e)
 
 
 
@@ -273,120 +314,168 @@ class RecipeImport(db.DBbase):
 # recipe_manager.save_to_database()
 
 
-#to use as starting point in interactive menu for user:
-class App:
-    def run(self):
-        user1 = Users()
-        results = user1.fetch_user()
-        if len(results) > 0:
-            for item in results:
-                print(item)
-        elif len(results) == 0:
-            print("Please create a new user to get started: ")
-            username = input("Enter a username: ")
-            email = input("Enter an email: ")
-            user1.add_user(username, email)
-            print("Done\n")
-            input("Press return to continue")
+# #to use as starting point in interactive menu for user:
+# class App:
+#     def run(self):
+#         user1 = Users()
+#         results = user1.fetch_user()
+#         if len(results) > 0:
+#             for item in results:
+#                 print(item)
+#         elif len(results) == 0:
+#             print("Please create a new user to get started: ")
+#             username = input("Enter a username: ")
+#             email = input("Enter an email: ")
+#             user1.add_user(username, email)
+#             print("Done\n")
+#             input("Press return to continue")
+#
+# apptest = App()
+# apptest.run()
 
-apptest = App()
-apptest.run()
+class InteractiveMenu:
+
+    # def __init__(self):
+    #     self.recipe_db = RecipeDb("RecipeCreator.db")
+    #     self.ingredient_db = IngredientsDb("RecipeCreator.db")
+    #     self.user_db = UserDb("RecipeCreator.db")
+
+    def display_menu(self):
+        while True:
+            print("\nWelcome to the Recipe Manager!")
+            print("1. Manage Users")
+            print("2. Manage Recipes")
+            print("3. Manage Ingredients")
+            print("4. Exit")
+            choice = input("Please choose an option: ")
+
+            if choice == '1':
+                self.user_options()
+            elif choice == '2':
+                self.recipe_options()
+            elif choice == '3':
+                self.ingredient_options()
+            elif choice == '4':
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid option, please try again.")
+
+    def user_options(self):
+        while True:
+            print("\nUser Management")
+            print("1. Add User")
+            print("2. Update User")
+            print("3. Delete User")
+            print("4. List Users")
+            print("5. Back to Main Menu")
+            choice = input("Please choose an option: ")
+
+            #creates instance of the class for user
+            user = Users()
+
+            if choice == '1':
+                username = input("Enter username: ")
+                email = input("Enter email: ")
+                user.add_user(username, email)
+            elif choice == '2':
+                userID = int(input("Enter user ID: ")) # handle data type error int #TODO
+                username = input("Enter new username: ")
+                user.update_user(username, userID)
+            elif choice == '3':
+                userID = int(input("Enter user ID: "))
+                user.delete_user(userID)
+            elif choice == '4':
+                users = user.fetch_user()
+                for user in users:
+                    print(user)
+            elif choice == '5':
+                break
+            else:
+                print("Invalid option, please try again.")
+
+    def recipe_options(self):
+        while True:
+            print("\nRecipe Management")
+            print("1. Add Recipe")
+            print("2. Update Recipe")
+            print("3. Delete Recipe")
+            print("4. List Recipes")
+            print("5. Back to Main Menu")
+            choice = input("Please choose an option: ")
+
+            # this creates an instance for recipe
+            recipe = Recipes()
+
+            if choice == '1':
+                recipeName = input("Enter recipe name: ")
+                category = input("Enter category: ")
+                description = input("Enter description: ")
+                preparationTime = int(input("Enter preparation time (in minutes): "))
+                cookingTime = int(input("Enter cooking time (in minutes): "))
+                servings = int(input("Enter number of servings: "))
+                recipe.add_recipe(recipeName, category, description, preparationTime, cookingTime, servings)
+            elif choice == '2':
+                recipeID = int(input("Enter recipe ID: "))
+                recipeName = input("Enter new recipe name: ")
+                category = input("Enter new category: ")
+                description = input("Enter new description: ")
+                preparationTime = int(input("Enter new preparation time (in minutes): "))
+                cookingTime = int(input("Enter new cooking time (in minutes): "))
+                servings = int(input("Enter new number of servings: "))
+                recipe.update_recipe(recipeID, recipeName, category, description, preparationTime, cookingTime, servings)
+            elif choice == '3':
+                recipeID = int(input("Enter recipe ID: "))
+                recipe.delete_recipe(recipeID)
+            elif choice == '4':
+                recipes = recipe.fetch_recipe()
+                for recipe in recipes:
+                    print(recipe)
+            elif choice == '5':
+                break
+            else:
+                print("Invalid option, please try again.")
+
+    def ingredient_options(self):
+        while True:
+            print("\nIngredient Management")
+            print("1. Add Ingredient")
+            print("2. Update Ingredient")
+            print("3. Delete Ingredient")
+            print("4. List Ingredients")
+            print("5. Back to Main Menu")
+            choice = input("Please choose an option: ")
+
+            # this creates an instance for ingredients
+            ingredient = Ingredients()
 
 
+            if choice == '1':
+                ingredientName = input("Enter ingredient name: ")
+                quantity = input("Enter quantity: ")
+                unit = input("Enter unit: ")
+                # recipeID = int(input("Enter recipe ID: "))
+                ingredient.add_ingrd(ingredientName, quantity, unit)  # deleted , recipeID
+            elif choice == '2':
+                ingredientID = int(input("Enter ingredient ID: "))
+                ingredientName = input("Enter new ingredient name: ")
+                ingredient.update_ingrd(ingredientID, ingredientName)
+            elif choice == '3':
+                ingredientID = int(input("Enter ingredient ID: "))
+                ingredient.delete_ingrd(ingredientID)
+            elif choice == '4':
+                ingredients = ingredient.fetch_ingrd()
+                for ingredient in ingredients:
+                    print(ingredient)
+            elif choice == '5':
+                break
+            else:
+                print("Invalid option, please try again.")
 
+# if __name__ == "__main__":
+#     print("************************ Welcome to Recipe Manager! ************************")
+#     menu = InteractiveMenu()
+#     menu.run()
 
-
-
-
-
-
-
-#Below are previous version CRUD. preserved for reference, update variables to the current names if using (see InitializeDB class):
-
-"""
-# CRUD Functions for the users table
-def create_user(username, password, email):
-    cursor.execute('''
-    INSERT INTO Users (Username, Password, Email) VALUES (?, ?, ?)
-    ''', (username, password, email))
-    conn.commit()
-
-
-def retrieve_user(user_id):
-    cursor.execute('''
-    SELECT * FROM Users WHERE UserID = ?
-    ''', (user_id,))
-    return cursor.fetchone()
-
-
-def update_user(user_id, username, password, email):
-    cursor.execute('''
-    UPDATE Users SET Username = ?, Password = ?, Email = ? WHERE UserID = ?
-    ''', (username, password, email, user_id))
-    conn.commit()
-
-
-def delete_user(user_id):
-    cursor.execute('''
-    DELETE FROM Users WHERE UserID = ?
-    ''', (user_id,))
-    conn.commit()
-
-
-# CRUD Functions for the recipes table
-def create_recipe(recipe_name, description, prep_time, cook_time, servings):
-    cursor.execute('''
-    INSERT INTO Recipes (RecipeName, Description, PreparationTime, CookingTime, Servings) VALUES (?, ?, ?, ?, ?)
-    ''', (recipe_name, description, prep_time, cook_time, servings))
-    conn.commit()
-
-
-def retrieve_recipe(recipe_id):
-    cursor.execute('''
-    SELECT * FROM Recipes WHERE RecipeID = ?
-    ''', (recipe_id,))
-    return cursor.fetchone()
-
-
-def update_recipe(recipe_id, recipe_name, description, prep_time, cook_time, servings):
-    cursor.execute('''
-    UPDATE Recipes SET RecipeName = ?, Description = ?, PreparationTime = ?, CookingTime = ?, Servings = ? WHERE RecipeID = ?
-    ''', (recipe_name, description, prep_time, cook_time, servings, recipe_id))
-    conn.commit()
-
-
-def delete_recipe(recipe_id):
-    cursor.execute('''
-    DELETE FROM Recipes WHERE RecipeID = ?
-    ''', (recipe_id,))
-    conn.commit()
-
-
-# CRUD Functions for the Ingredients table
-def create_ingredient(ingredient_name, quantity, unit, recipe_id):
-    cursor.execute('''
-    INSERT INTO Ingredients (IngredientName, Quantity, Unit, RecipeID) VALUES (?, ?, ?, ?)
-    ''', (ingredient_name, quantity, unit, recipe_id))
-    conn.commit()
-
-
-def retrieve_ingredient(ingredient_id):
-    cursor.execute('''
-    SELECT * FROM Ingredients WHERE IngredientID = ?
-    ''', (ingredient_id,))
-    return cursor.fetchone()
-
-
-def update_ingredient(ingredient_id, ingredient_name, quantity, unit, recipe_id):
-    cursor.execute('''
-    UPDATE Ingredients SET IngredientName = ?, Quantity = ?, Unit = ?, RecipeID = ? WHERE IngredientID = ?
-    ''', (ingredient_name, quantity, unit, recipe_id, ingredient_id))
-    conn.commit()
-
-
-def delete_ingredient(ingredient_id):
-    cursor.execute('''
-    DELETE FROM Ingredients WHERE IngredientID = ?
-    ''', (ingredient_id,))
-    conn.commit()
-"""
+menu = InteractiveMenu()
+menu.display_menu()
