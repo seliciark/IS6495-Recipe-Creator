@@ -509,9 +509,9 @@ class InteractiveMenu:
 #code below executes application
 
 #create database and populate default data
-createDB = InitializeDB("RecipeCreator.sqlite")
-createDB.createDBTables()
-createDB.populateDB()
+# createDB = InitializeDB("RecipeCreator.sqlite")
+# createDB.createDBTables()
+# createDB.populateDB()
 
 #call interactive menu
 menu = InteractiveMenu()
