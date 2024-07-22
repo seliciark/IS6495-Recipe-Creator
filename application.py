@@ -38,7 +38,7 @@ class InitializeDB(db.DBbase):
             );
             """
             super().execute_script(sql)
-            print("Default Database Created Successfully")
+            #print("Default Database Created Successfully")
 
         except Exception as e:
             print("Error Creating DB Tables", e)
@@ -96,7 +96,7 @@ class InitializeDB(db.DBbase):
 
             super().get_connection.commit()
 
-            print("Default Data Population Successful")
+            #print("Default Data Population Successful")
         except Exception as e:
             print("error populating default database: ", e)
 
@@ -124,6 +124,7 @@ class Users(db.DBbase):
                 print("This user already exists")
         except Exception as e:
             print("An error occurred adding user: ", e)
+
 
     def delete_user(self, userID):
         try:
@@ -196,6 +197,7 @@ class Ingredients(db.DBbase):
             print("An error occurred finding Ingredients.", e)
 
 
+
 class RecipeRows:
     def __init__(self, row):
         self.recipeID = None
@@ -212,10 +214,7 @@ class RecipeImport(db.DBbase):
         super().__init__(db_name)
         self.recipe_list = []
 
-    #Recipes will be the CSV file import we use in the demo "Would you like to import additional recipes?"
-
     def read_recipes(self, file_name):
-        self.recipe_list = []
 
         try:
             with open(file_name, 'r') as record:
@@ -231,25 +230,12 @@ class RecipeImport(db.DBbase):
 
     def save_to_database(self):
         print("Number of records to save: ", len(self.recipe_list))
-        save = input("Continue? (y/n)").lower()
+        save = input("Continue? (y/n) ").lower()
 
         if save == "y":
             for item in self.recipe_list:
                 item.recipeName = item.recipeName.replace("NaN", "No Name Supplied")
 
-                # recipeName, category, description, preparationTime, cookingTime, servings
-                """
-                Recipes (
-                    recipeID INTEGER PRIMARY KEY AUTOINCREMENT,
-                    recipeName TEXT NOT NULL,
-                    category TEXT,
-                    description TEXT,
-                    preparationTime INTEGER,  -- in minutes
-                    cookingTime INTEGER,  -- in minutes
-                    servings INTEGER,
-                    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-                """
                 try:
                     super().get_cursor.execute(""" 
                     INSERT INTO Recipes
@@ -263,6 +249,7 @@ class RecipeImport(db.DBbase):
 
                 except Exception as e:
                     print(e)
+
         else:
             print("save to DB aborted")
 
@@ -314,11 +301,13 @@ class Recipes(db.DBbase):
         except Exception as e:
             print("An error occurred finding Recipes.", e)
 
+
     def fetch_recipe_by_category(self, category):
         try:
             return super().get_cursor.execute("SELECT recipeName FROM Recipes WHERE category = ?", (category,)).fetchone()
         except Exception as e:
             print("An error occurred finding Recipes by category.", e)
+
 
     def fetch_recipes_by_ingredient(self, ingredientName):
         try:
@@ -333,12 +322,8 @@ class Recipes(db.DBbase):
             print("An error occurred finding Recipes by ingredient.", e)
 
 
-class InteractiveMenu:
 
-    # def __init__(self):
-    #     self.recipe_db = RecipeDb("RecipeCreator.sqlite")
-    #     self.ingredient_db = IngredientsDb("RecipeCreator.sqlite")
-    #     self.user_db = UserDb("RecipeCreator.sqlite")
+class InteractiveMenu:
 
     def user_display(self):
 
@@ -520,19 +505,15 @@ class InteractiveMenu:
                 print("Invalid option, please try again.")
 
 
-# if __name__ == "__main__":
-#     print("************************ Welcome to Recipe Manager! ************************")
-#     menu = InteractiveMenu()
-#     menu.run()
 
+#code below executes application
 
-#create database and populate default data:
-
+#create database and populate default data
 createDB = InitializeDB("RecipeCreator.sqlite")
 createDB.createDBTables()
 createDB.populateDB()
 
-#run application
-
+#call interactive menu
 menu = InteractiveMenu()
 menu.user_display()
+
