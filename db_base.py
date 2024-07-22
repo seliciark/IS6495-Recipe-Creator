@@ -31,7 +31,7 @@ class DBbase:
 
     # Function/method: resets the database
     def reset_database(self):
-        raise NotImplementedError("Must implement from the derived class")
+        raise  NotImplementedError("Must implement from the derived class")
 
     # Function/method: closes the connection
     def close_db(self):
